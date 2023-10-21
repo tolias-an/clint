@@ -55,19 +55,57 @@ static json_object* _find_in_comp_db(char *filename) {
 }
 
 static char * _transform(json_object *command_entry) {
+    const char *directory = json_object_get_string(json_object_object_get(command_entry, "directory"));
+    const char *file = json_object_get_string(json_object_object_get(command_entry, "file"));
     const char *output = json_object_get_string(json_object_object_get(command_entry, "output"));
-    const char * command = json_object_get_string(json_object_object_get(command_entry, "command"));
-    token_list *list = (token_list *) token_list_create((char *) command);
+    const char *command = json_object_get_string(json_object_object_get(command_entry, "command"));
 
-    /* Replace output file to /dev/null */
-    if (!token_list_replace(list, output, "/dev/null")) {
-        token_list_free(list);
-        return NULL;
+    char *absolute_path = canonicalise_path(directory, file);
+
+    token_list *list = token_list_create((char *) command);
+    token_list *token = list;
+
+    while (token) {
+        /* Replace input file with the file's absolute path */
+        token_replace(token, file, absolute_path);
+
+        /* Replace include paths */
+        if (!strncmp(token->token, "-I", 2)) {
+            char *include_path = canonicalise_path(directory, token->token + 2);
+
+            if (include_path) {
+                char *include_command = malloc(strlen(include_path) + 3);
+
+                sprintf(include_command, "-I%s", include_path);
+                token_replace(token, token->token, include_command);
+                free(include_command);
+                free(include_path);
+            }
+        }
+
+        /* Replace output file with /dev/null */
+        token_replace(token, output, "/dev/null");
+
+        /* Replace paths */
+        if (strncmp(token->token, "-", 1)) {
+            /* Leave as is if it is path */
+            if (!in_path(token->token)) {
+                char *path = canonicalise_path(directory, token->token);
+
+                if (path) {
+                    token_replace(token, token->token, path);
+                    free(path);
+                }
+            }
+        }
+
+        token = token->next;
     }
 
     char *new_command = token_list_bake(list);
 
-    token_list_free(list);
+    free(absolute_path); absolute_path = NULL;
+    token_list_free(list); list = NULL;
 
     return new_command;
 }

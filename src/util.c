@@ -1,7 +1,10 @@
 #include "clint/util.h"
 
+#include <limits.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 token_list* token_list_create(char *str) {
     char *token = strtok(str, " ");
@@ -28,22 +31,14 @@ token_list* token_list_create(char *str) {
     return list;
 }
 
-int token_list_replace(const token_list *list, const char *old, const char *new) {
-    token_list *token = (token_list *) list;
-    int replaced = 0;
-
-    while(token) {
-        if (strncmp(token->token, old, strlen(token->token))) {
-            token = token->next;
-            continue;
-        }
-
+int token_replace(token_list *token, const char *old, const char *new) {
+    if (!strncmp(token->token, old, strlen(token->token))) {
         free(token->token);
         token->token = strdup(new);
-        replaced++;
+        return 1;
     }
 
-    return replaced;
+    return 0;
 }
 
 char *token_list_bake(const token_list *list) {
@@ -54,7 +49,7 @@ char *token_list_bake(const token_list *list) {
     token_list *token = (token_list *) list;
 
     while(token) {
-        if (strlen(token->token) > current_size - index) {
+        if (strlen(token->token) > current_size - index - 1) {
             current_size *= 2;
 
             char *tmp = realloc(result, current_size);
@@ -88,4 +83,65 @@ void token_list_free(token_list *list) {
         free(list);
         list = next;
     }
+}
+
+char in_path(const char *file) {
+    char result = 0;
+    /* Duplicate env variable to ensure environment integrity */
+    char *env_path = strdup(getenv("PATH"));
+    if (!env_path) return result;
+    char *path = malloc(PATH_MAX);
+    if (!path) { free(env_path); env_path = NULL; return result; }
+
+    char *path_token = strtok(env_path, ":");
+
+    while (path_token) {
+        sprintf(path, "%s/%s", path_token, file);
+
+        if (!access(path, X_OK)) {
+            result = 1;
+            break;
+        }
+
+        path_token = strtok(NULL, ":");
+    }
+
+    free(env_path); env_path = NULL;
+    free(path); path = NULL;
+
+    return result;
+}
+
+char* canonicalise_path(const char *base_path, const char *relative_path) {
+    if (!strncmp(relative_path, "/", 1)) {
+        return NULL;
+    }
+
+    char *big_path = malloc(PATH_MAX);
+    if (!big_path) return NULL;
+
+    sprintf(big_path, "%s/%s", base_path, relative_path);
+
+    char *path = malloc(strlen(base_path) + strlen(relative_path));
+    if (!path) { free(big_path); big_path = NULL; return NULL; }
+
+    char *token = strtok(big_path, "/");
+    char *path_ptr = path;
+
+    while(token) {
+        if (!strcmp(token, "..")) {
+            path_ptr = strrchr(path, '/');
+        } else if (!strcmp(token, ".")) {
+            ;
+        } else {
+            int chars_written = sprintf(path_ptr, "/%s", token);
+            path_ptr += chars_written;
+        }
+
+        token = strtok(NULL, "/");
+    }
+
+    free(big_path); big_path = NULL;
+
+    return path;
 }
