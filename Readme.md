@@ -22,7 +22,7 @@ meson install -C build
 ## Running
 
 You need a ```compile_commands.json``` in your project root. Run ```clint file.c``` and it should
-output compiler warnings for the.
+output compiler warnings for the file.
 
 ## How it works
 
