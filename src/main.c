@@ -133,16 +133,18 @@ static int _lint_file(char *filename) {
     }
 
     /* Run command */
-    char buffer[256];
     FILE *fp = popen(command, "r");
     if (!fp)
         return CLINT_COMMAND_ERROR;
 
-    while(fgets(buffer, sizeof(buffer), fp)) {
+    char *buffer = malloc(512);
+
+    while(fgets(buffer, 512, fp)) {
         printf("%s\n", buffer);
     }
 
     pclose(fp);
+    free(buffer);
     free(command);
     json_object_put(command_entry);
     return CLINT_OK;
