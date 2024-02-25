@@ -1,6 +1,8 @@
 #include "clint/clint.h"
 
+#include <limits.h>
 #include <getopt.h>
+#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -18,6 +20,8 @@ static json_object* _find_in_comp_db(char *filename) {
 
     /* Get filename path */
     char *file_path = realpath(filename, NULL);
+    char *relative_path = malloc(PATH_MAX);
+    char *absolute_path = malloc(PATH_MAX);
     json_object *command_entry = NULL;
 
     for (unsigned long i = 0; i < json_object_array_length(root); i++) {
@@ -26,30 +30,23 @@ static json_object* _find_in_comp_db(char *filename) {
         json_object *directory = json_object_object_get(command_entry, "directory");
         json_object *file = json_object_object_get(command_entry, "file");
 
-        unsigned long path_size = (unsigned long) (json_object_get_string_len(directory) + json_object_get_string_len(file) + 2);
+        sprintf(relative_path, "%s/%s",
+                json_object_get_string(directory), json_object_get_string(file));
 
-        char *relative_path = (char *) malloc(path_size);
+        realpath(relative_path, absolute_path);
 
-        strcpy(relative_path, json_object_get_string(directory));
-        strcat(relative_path, "/");
-        strcat(relative_path, json_object_get_string(file));
-
-        char *absolute_path = realpath(relative_path, NULL);
-
-        if (!strncmp(absolute_path, file_path, path_size)) {
-            free(relative_path);
-            free(absolute_path);
+        if (!strncmp(absolute_path, file_path, PATH_MAX)) {
             json_object_get(command_entry);
             break;
         }
 
-        free(relative_path);
-        free(absolute_path);
         command_entry = NULL;
     }
 
-    json_object_put(root);
-    free(file_path);
+    json_object_put(root); root = NULL;
+    free(file_path); file_path = NULL;
+    free(absolute_path); absolute_path = NULL;
+    free(relative_path); relative_path = NULL;
 
     return command_entry;
 }
@@ -117,9 +114,6 @@ static int _lint_file(char *filename) {
     }
 
     /* TODO: Search recursively for compilation database */
-    if (access(filename, R_OK)) {
-        return CLINT_COMP_DB_NOT_FOUND;
-    }
 
     json_object *command_entry = _find_in_comp_db(filename);
     if (!command_entry)
@@ -129,24 +123,27 @@ static int _lint_file(char *filename) {
      * and apply transformations */
     char *command = _transform(command_entry);
     if (!command) {
+        json_object_put(command_entry);
         return CLINT_TOKEN_ERROR;
     }
 
     /* Run command */
     FILE *fp = popen(command, "r");
-    if (!fp)
+    if (!fp) {
+        json_object_put(command_entry);
+        free(command);
         return CLINT_COMMAND_ERROR;
+    }
 
-    char *buffer = malloc(512);
+    char buffer[512];
 
     while(fgets(buffer, 512, fp)) {
         printf("%s\n", buffer);
     }
 
     pclose(fp);
-    free(buffer);
-    free(command);
     json_object_put(command_entry);
+    free(command);
     return CLINT_OK;
 }
 
