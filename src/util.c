@@ -42,26 +42,11 @@ int token_replace(token_list *token, const char *old, const char *new) {
 }
 
 char *token_list_bake(const token_list *list) {
-    /* Allocated memory for the result starts from 32 bytes and doubles as needed. */
-    size_t current_size = 32;
-    char *result = malloc(current_size);
+    char *result = malloc(PATH_MAX);
     size_t index = 0;
     token_list *token = (token_list *) list;
 
     while(token) {
-        if (strlen(token->token) > current_size - index - 1) {
-            current_size *= 2;
-
-            char *tmp = realloc(result, current_size);
-            if (!tmp) {
-                free(result);
-                result = NULL;
-                return NULL;
-            }
-
-            result = tmp;
-        }
-
         memcpy(result + index, token->token, strlen(token->token));
         index += strlen(token->token);
         result[index++] = ' ';
@@ -122,7 +107,7 @@ char* canonicalise_path(const char *base_path, const char *relative_path) {
 
     sprintf(big_path, "%s/%s", base_path, relative_path);
 
-    char *path = malloc(strlen(base_path) + strlen(relative_path));
+    char *path = malloc(PATH_MAX);
     if (!path) { free(big_path); big_path = NULL; return NULL; }
 
     char *token = strtok(big_path, "/");
