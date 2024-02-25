@@ -148,35 +148,32 @@ static int _lint_file(char *filename) {
 }
 
 int main(int argc, char *argv[]) {
-    int index, err = CLINT_OK;
+    int index, err;
 
     for (index = optind; index < argc; index++) {
         err = _lint_file(argv[index]);
-        if (err)
-            break;
-    }
 
-    switch (err) {
-        case CLINT_OK:
-            break;
-        case CLINT_FILE_NOT_FOUND:
-            fprintf(stderr, "Error: File %s was not found\n", argv[index]);
-            break;
-        case CLINT_COMP_DB_NOT_FOUND:
-            fprintf(stderr, "Error: compile_commands.json was not found\n");
-            break;
-        case CLINT_FILE_NOT_IN_COMP_DB:
-            fprintf(stderr, "Error: File %s was not found in compile_commands.json\n", argv[index]);
-            break;
-        case CLINT_TOKEN_ERROR:
-            fprintf(stderr, "Error: Tokenising failed\n");
-            break;
-        case CLINT_COMMAND_ERROR:
-            fprintf(stderr, "Error: Unable to reproduce command\n");
-            break;
-        default:
-            fprintf(stderr, "Error: Unknown error\n");
-            break;
+        switch (err) {
+            case CLINT_OK:
+                break;
+            case CLINT_FILE_NOT_FOUND:
+                fprintf(stderr, "Error: File %s was not found\n", argv[index]);
+                break;
+            case CLINT_COMP_DB_NOT_FOUND:
+                fprintf(stderr, "Error: compile_commands.json was not found\n");
+                break;
+            case CLINT_FILE_NOT_IN_COMP_DB:
+                fprintf(stderr, "Error: File %s was not found in compile_commands.json\n", argv[index]);
+                break;
+            case CLINT_TOKEN_ERROR:
+                fprintf(stderr, "Error: Tokenising failed\n");
+                break;
+            case CLINT_COMMAND_ERROR:
+                fprintf(stderr, "Error: Unable to reproduce command\n");
+                break;
+            default:
+                fprintf(stderr, "Error: Unknown error\n");
+                break;
+        }
     }
-    return err;
 }
