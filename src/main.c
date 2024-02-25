@@ -58,6 +58,7 @@ static char * _transform(json_object *command_entry) {
     const char *command = json_object_get_string(json_object_object_get(command_entry, "command"));
 
     char *absolute_path = canonicalise_path(directory, file);
+    char *path_buffer = malloc(PATH_MAX);
 
     token_list *list = token_list_create((char *) command);
     token_list *token = list;
@@ -67,15 +68,23 @@ static char * _transform(json_object *command_entry) {
         token_replace(token, file, absolute_path);
 
         /* Replace include paths */
-        if (!strncmp(token->token, "-I", 2)) {
+        if (strncmp(token->token, "-I", 2) == 0) {
             char *include_path = canonicalise_path(directory, token->token + 2);
 
             if (include_path) {
-                char *include_command = malloc(strlen(include_path) + 3);
+                sprintf(path_buffer, "-I%s", include_path);
+                token_replace(token, token->token, path_buffer);
+                free(include_path);
+            }
+        }
 
-                sprintf(include_command, "-I%s", include_path);
-                token_replace(token, token->token, include_command);
-                free(include_command);
+        /* Replace system include flags */
+        if (strncmp(token->token, "-isystem", 8) == 0) {
+            char *include_path = canonicalise_path(directory, token->token + 8);
+
+            if (include_path) {
+                sprintf(path_buffer, "-isystem%s", include_path);
+                token_replace(token, token->token, path_buffer);
                 free(include_path);
             }
         }
@@ -84,7 +93,7 @@ static char * _transform(json_object *command_entry) {
         token_replace(token, output, "/dev/null");
 
         /* Replace paths */
-        if (strncmp(token->token, "-", 1)) {
+        if (strncmp(token->token, "-", 1) != 0) {
             /* Leave as is if it is path */
             if (!in_path(token->token)) {
                 char *path = canonicalise_path(directory, token->token);
@@ -102,6 +111,7 @@ static char * _transform(json_object *command_entry) {
     char *new_command = token_list_bake(list);
 
     free(absolute_path); absolute_path = NULL;
+    free(path_buffer); path_buffer = NULL;
     token_list_free(list); list = NULL;
 
     return new_command;
