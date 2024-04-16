@@ -40,17 +40,17 @@ char* token_list_bake(const token_list *list);
 void token_list_free(token_list *list);
 
 /*
-* Checks if _file_ is in the PATH environment variable. Returns 1 if found
-* and zero if not found
-*/
-char in_path(const char *file);
-
-/*
 * Calculates the absolute path by appending _relative_path_ to
 * _base_path_. Result is malloc'd. Returns NULL if _relative_path_ is
 * already canonical
 */
-char* canonicalise_path(const char *base_path, const char *relative_path);
+char* path_canonicalise(const char *base_path, const char *relative_path);
+
+/*
+* Checks if _file_ is in the PATH environment variable. Returns 1 if found
+* and zero if not found
+*/
+char path_in_env(const char *file);
 
 /*
 * Search for _filename_ in current and parent directories

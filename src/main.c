@@ -60,7 +60,7 @@ static char * _transform(json_object *command_entry) {
     const char *output = json_object_get_string(json_object_object_get(command_entry, "output"));
     const char *command = json_object_get_string(json_object_object_get(command_entry, "command"));
 
-    char *absolute_path = canonicalise_path(directory, file);
+    char *absolute_path = path_canonicalise(directory, file);
     char *path_buffer = malloc(PATH_MAX);
 
     token_list *list = token_list_create((char *) command);
@@ -72,7 +72,7 @@ static char * _transform(json_object *command_entry) {
 
         /* Replace include paths */
         if (strncmp(token->token, "-I", 2) == 0) {
-            char *include_path = canonicalise_path(directory, token->token + 2);
+            char *include_path = path_canonicalise(directory, token->token + 2);
 
             if (include_path) {
                 sprintf(path_buffer, "-I%s", include_path);
@@ -83,7 +83,7 @@ static char * _transform(json_object *command_entry) {
 
         /* Replace system include flags */
         if (strncmp(token->token, "-isystem", 8) == 0) {
-            char *include_path = canonicalise_path(directory, token->token + 8);
+            char *include_path = path_canonicalise(directory, token->token + 8);
 
             if (include_path) {
                 sprintf(path_buffer, "-isystem%s", include_path);
@@ -98,8 +98,8 @@ static char * _transform(json_object *command_entry) {
         /* Replace paths */
         if (strncmp(token->token, "-", 1) != 0) {
             /* Leave as is if it is path */
-            if (!in_path(token->token)) {
-                char *path = canonicalise_path(directory, token->token);
+            if (!path_in_env(token->token)) {
+                char *path = path_canonicalise(directory, token->token);
 
                 if (path) {
                     token_replace(token, token->token, path);
@@ -170,10 +170,10 @@ static int _lint_file(char *filename) {
 }
 
 int main(int argc, char *argv[]) {
-    int index, err;
+    int index;
 
     for (index = optind; index < argc; index++) {
-        err = _lint_file(argv[index]);
+        int err = _lint_file(argv[index]);
 
         switch (err) {
             case CLINT_OK:

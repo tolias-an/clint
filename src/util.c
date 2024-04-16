@@ -7,7 +7,7 @@
 #include <unistd.h>
 
 token_list* token_list_create(char *str) {
-    char *token = strtok(str, " ");
+    const char *token = strtok(str, " ");
     if (!token) return NULL;
 
     token_list *list = malloc(sizeof * list);
@@ -57,7 +57,7 @@ int token_replace(token_list *token, const char *old, const char *new) {
 char *token_list_bake(const token_list *list) {
     char *result = malloc(PATH_MAX);
     size_t index = 0;
-    token_list *token = (token_list *) list;
+    const token_list *token = (token_list *) list;
 
     while(token) {
         memcpy(result + index, token->token, strlen(token->token));
@@ -83,34 +83,7 @@ void token_list_free(token_list *list) {
     }
 }
 
-char in_path(const char *file) {
-    char result = 0;
-    /* Duplicate env variable to ensure environment integrity */
-    char *env_path = strdup(getenv("PATH"));
-    if (!env_path) return result;
-    char *path = malloc(PATH_MAX);
-    if (!path) { free(env_path); env_path = NULL; return result; }
-
-    char *path_token = strtok(env_path, ":");
-
-    while (path_token) {
-        sprintf(path, "%s/%s", path_token, file);
-
-        if (!access(path, X_OK)) {
-            result = 1;
-            break;
-        }
-
-        path_token = strtok(NULL, ":");
-    }
-
-    free(env_path); env_path = NULL;
-    free(path); path = NULL;
-
-    return result;
-}
-
-char* canonicalise_path(const char *base_path, const char *relative_path) {
+char* path_canonicalise(const char *base_path, const char *relative_path) {
     if (!strncmp(relative_path, "/", 1)) {
         return NULL;
     }
@@ -123,7 +96,7 @@ char* canonicalise_path(const char *base_path, const char *relative_path) {
     char *path = malloc(PATH_MAX);
     if (!path) { free(big_path); big_path = NULL; return NULL; }
 
-    char *token = strtok(big_path, "/");
+    const char *token = strtok(big_path, "/");
     char *path_ptr = path;
 
     while(token) {
@@ -142,6 +115,33 @@ char* canonicalise_path(const char *base_path, const char *relative_path) {
     free(big_path); big_path = NULL;
 
     return path;
+}
+
+char path_in_env(const char *file) {
+    char result = 0;
+    /* Duplicate env variable to ensure environment integrity */
+    char *env_path = strdup(getenv("PATH"));
+    if (!env_path) return result;
+    char *path = malloc(PATH_MAX);
+    if (!path) { free(env_path); env_path = NULL; return result; }
+
+    const char *path_token = strtok(env_path, ":");
+
+    while (path_token) {
+        sprintf(path, "%s/%s", path_token, file);
+
+        if (!access(path, X_OK)) {
+            result = 1;
+            break;
+        }
+
+        path_token = strtok(NULL, ":");
+    }
+
+    free(env_path); env_path = NULL;
+    free(path); path = NULL;
+
+    return result;
 }
 
 char* path_upward_search(const char *filename) {
