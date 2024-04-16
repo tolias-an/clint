@@ -52,4 +52,10 @@ char in_path(const char *file);
 */
 char* canonicalise_path(const char *base_path, const char *relative_path);
 
+/*
+* Search for _filename_ in current and parent directories
+* Result is malloc'd. Returns null if _filename_ isn't found
+*/
+char* path_upward_search(const char *filename);
+
 #endif /* _CLINT_UTIL_H */

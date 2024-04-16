@@ -13,8 +13,11 @@
 
 #include "clint/util.h"
 
-static json_object* _find_in_comp_db(char *filename) {
-    json_object *root = json_object_from_file("compile_commands.json");
+/*
+* Search for _filename_ in compilation database _db_
+*/
+static json_object* _find_in_comp_db(char *filename, char *db) {
+    json_object *root = json_object_from_file(db);
     if (!root)
         return NULL;
 
@@ -129,9 +132,12 @@ static int _lint_file(char *filename) {
         return CLINT_FILE_NOT_FOUND;
     }
 
-    /* TODO: Search recursively for compilation database */
+    char *db = path_upward_search("compile_commands.json");
+    if (!db)
+        return CLINT_COMP_DB_NOT_FOUND;
 
-    json_object *command_entry = _find_in_comp_db(filename);
+    json_object *command_entry = _find_in_comp_db(filename, db);
+    free(db);
     if (!command_entry)
         return CLINT_FILE_NOT_IN_COMP_DB;
 

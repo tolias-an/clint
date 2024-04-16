@@ -143,3 +143,29 @@ char* canonicalise_path(const char *base_path, const char *relative_path) {
 
     return path;
 }
+
+char* path_upward_search(const char *filename) {
+    char *path = malloc(PATH_MAX);
+    if (!path) return NULL;
+
+    char *cwd = getcwd(NULL, PATH_MAX);
+    if (!cwd) { free(path); path = NULL; return NULL; }
+
+    while(1) {
+        sprintf(path, "%s/%s", cwd, filename);
+
+        if (access(path, R_OK) == 0)
+            break;
+
+        *(strrchr(cwd, '/')) = 0;
+
+        if (*cwd == 0) {
+            free(path);
+            path = NULL;
+            break;
+        }
+    }
+
+    free(cwd); cwd = NULL;
+    return path;
+}
