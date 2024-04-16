@@ -105,8 +105,14 @@ static char * _transform(json_object *command_entry) {
             }
         }
 
+        if (!token->next)
+            break;
+
         token = token->next;
     }
+
+    /* Append arguments */
+    token_append(token, "-fno-diagnostics-color");
 
     char *new_command = token_list_bake(list);
 

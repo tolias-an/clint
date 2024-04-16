@@ -31,6 +31,19 @@ token_list* token_list_create(char *str) {
     return list;
 }
 
+void token_append(token_list *token, const char *value) {
+    token_list *next = token->next;
+    token_list *new_token = malloc(sizeof *new_token);
+
+    size_t new_value_size = strlen(value) + 1;
+    char *new_value = malloc(new_value_size);
+    strncpy(new_value, value, new_value_size);
+    new_token->token = new_value;
+
+    token->next = new_token;
+    new_token->next = next;
+}
+
 int token_replace(token_list *token, const char *old, const char *new) {
     if (!strncmp(token->token, old, strlen(token->token))) {
         free(token->token);

@@ -18,6 +18,11 @@ struct token_list {
 token_list* token_list_create(char *str);
 
 /*
+* Inserts new token with _value_ after _token_
+*/
+void token_append(token_list *token, const char *value);
+
+/*
 * Replaces _old_ with _new_
 */
 int token_replace(token_list *token, const char *old, const char *new);
