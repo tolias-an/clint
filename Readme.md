@@ -14,14 +14,13 @@ database.
 
 ## Installation
 
-```
 meson setup build
 meson install -C build
-```
 
 ## Running
 
-You need a ```compile_commands.json``` in your project root. Run ```clint file.c``` and it should
+You need a ```compile_commands.json``` in your project root. Clint will search for a compilation
+database in the current and parent directories. Run ```clint file.c``` and it should
 output compiler warnings for the file.
 
 ## How it works
